@@ -30,8 +30,10 @@ Use targeted, grep-style search with line/size limits rather than reading a whol
 
 ## 3. Cross-reference with git
 
-- Committed changes: `git log --since="<date> 00:00" --until="<date> 23:59:59" --date=local --name-status --pretty=format:'%h|%ad|%s'`
-- If the target date is today, also check uncommitted work: `git status --porcelain` and `git diff --stat`.
+- The repo may be shared with teammates, so always scope commits to the user themselves: get their identity with `git config user.email` (fall back to `user.name`) and add `--author="<identity>"`.
+  `git log --author="<user.email>" --since="<date> 00:00" --until="<date> 23:59:59" --date=local --name-status --pretty=format:'%h|%ad|%s'`
+- Never report unfiltered `git log` output as "what the user did" — without the author filter, teammates' commits on the same day get attributed to the user, producing a wrong summary.
+- If the target date is today, also check uncommitted work: `git status --porcelain` and `git diff --stat` (this is local working-tree state, so no author filtering is needed there).
 - Repeat per repo if multiple repos are in scope.
 
 ## 4. Report
@@ -47,4 +49,5 @@ Match session-touched files against git-changed files by path, then summarize gr
 
 - Session transcripts contain a lot of noise (tool output, system reminders). Only treat human-typed text and actual file-editing tool calls as signal.
 - Timestamps inside the JSONL are UTC (`Z` suffix); file modification times are shown in local time. Use file mtime for day-boundary filtering, and only fall back to converting timestamps near midnight if results look ambiguous.
+- In a shared repo, never report raw `git log` output as the user's own work without the author filter (see step 3) — that misattributes teammates' commits.
 - This skill only reads data that already exists locally (Claude Code's own session logs and local git metadata) — it doesn't call out to any external service.
