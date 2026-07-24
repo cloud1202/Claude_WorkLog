@@ -45,6 +45,22 @@ Match session-touched files against git-changed files by path, then summarize gr
 - Collapse multiple sessions on the same topic into one narrative — the goal is "what got done," not "how many sessions it took"
 - Mention discussion-only sessions (no file changes) briefly, only if relevant
 
+## 5. Visualize workload
+
+Give the user a relative sense of how big each topic was.
+
+- **Primary sizing metric**: files changed and diff lines changed (insertions + deletions).
+  - For the user's own commits (from step 3): `git show --stat <hash>`.
+  - For tracked-but-uncommitted files: `git diff --stat -- <files>`.
+  - For new (untracked) files, diff won't show them — count the whole file as added lines with `wc -l <file>`.
+  - Sum across every commit/file that belongs to the same topic.
+- **Reference metrics (do not fold into the primary size)**: for the session(s) behind that topic, the span between the first and last human-authored message timestamp on the target date (duration), and the sum of `message.usage.output_tokens` across assistant turns on that date (token usage). Filter to the target date only if the session spans multiple days. Keep these separate from the ranking — token count and duration correlate weakly with actual complexity.
+- **Load the `dataviz` skill before building any chart** and follow its procedure (form → color → marks → accessibility). This case is a single metric (diff lines) compared across topics, so the form is a horizontal bar chart, one series (no legend needed), colored with the palette's default sequential hue (blue) only.
+- Bar length = diff lines, with a value label at the tip. Put files-changed count and commit status (committed/uncommitted) as secondary text on the row; put duration and token usage in a hover tooltip and a table-view toggle.
+- Publish it as an Artifact (write the file to the scratchpad directory, then publish). Keep the chat reply to a short summary of the key numbers plus the artifact link.
+- Define the theme's CSS custom properties (`--text-primary`, etc.) on `:root`, not on an inner wrapper class like `.viz-root`. Scoping them to the wrapper only means any descendant that doesn't set its own color (e.g. an `h1`) falls back through inheritance to `body`, hits an undefined var there, and keeps whatever ambient color it inherited — in dark mode this leaves dark-on-light text sitting on a dark card, i.e. invisible text. Double-check every text element has an explicit color, not just an inherited one.
+- If the user asks for a circular (donut/pie) form, offer it **in addition to** the bar, not instead of it. Keep the bar for precise magnitude comparison; use the donut only for "what share of today's total does this topic account for" (part-to-whole), with ≤6 segments, and skip it if the values are too close to distinguish by angle (bar or plain numbers instead). Because each topic is now an identity (not a ranked magnitude), use the categorical palette (fixed slot order 1, 2, 3, …) instead of the single sequential hue, and run `validate_palette.js` even for 3 slots. Always pair it with a legend (swatch + name + value + share%) so identity never depends on color alone.
+
 ## Notes
 
 - Session transcripts contain a lot of noise (tool output, system reminders). Only treat human-typed text and actual file-editing tool calls as signal.
